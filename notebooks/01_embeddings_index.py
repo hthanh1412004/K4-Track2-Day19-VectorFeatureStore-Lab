@@ -71,7 +71,7 @@ client.create_collection(
 )
 
 # %% [markdown]
-# ## 4. TODO — embed + upsert toàn bộ corpus
+# ## 4. Embed + upsert toàn bộ corpus
 #
 # Embed `title + " " + text` cho từng doc, batch theo 64 docs/lần (fastembed
 # CPU-bound, batch=64 là sweet spot). Upsert vào Qdrant collection `lab19`.
@@ -79,7 +79,6 @@ client.create_collection(
 # **Hint:** xem `app/search.py` `_build_vector_index()` để tham khảo pattern.
 
 # %%
-# TODO: implement the embed + upsert loop here.
 # Expected outcome: client.count("lab19") == 1000
 # (~30 seconds on first run as fastembed downloads the model.)
 
@@ -132,6 +131,8 @@ hits2 = client.query_points(collection_name="lab19", query=q_vec2, limit=5).poin
 print(f"Query (paraphrase): {query2!r}")
 for h in hits2:
     print(f"  [{h.payload['topic']:>9}] score={h.score:.3f}  {h.payload['title']}")
+cloud_hits = sum(h.payload["topic"] == "cloud" for h in hits2)
+print(f"Cloud topic in top-5: {cloud_hits}/5")
 
 # %% [markdown]
 # ## Deliverable evidence (chụp màn hình)

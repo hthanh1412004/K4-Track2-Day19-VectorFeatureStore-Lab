@@ -81,7 +81,7 @@ def search_semantic(query: str, top_k: int = TOP_K) -> list[str]:
 
 
 # %% [markdown]
-# ## 3. TODO — implement Reciprocal Rank Fusion
+# ## 3. Reciprocal Rank Fusion
 #
 # Công thức (deck §3):
 #
@@ -100,9 +100,6 @@ def search_hybrid(query: str, top_k: int = TOP_K, rrf_k: int = RRF_K) -> list[st
     kw_ids = search_keyword(query, depth)
     sem_ids = search_semantic(query, depth)
 
-    # TODO: implement RRF fusion below.
-    # Hint: dict[doc_id, float] cộng 1/(rrf_k + rank) từ mỗi retriever.
-    # rank starts at 1, not 0.
     rrf: dict[str, float] = {}
     for rank, doc_id in enumerate(kw_ids, start=1):
         rrf[doc_id] = rrf.get(doc_id, 0.0) + 1.0 / (rrf_k + rank)
@@ -147,6 +144,10 @@ print(f"Precision@10 (avg over {len(golden)} queries):")
 print(f"  Keyword (BM25)   : {statistics.mean(p_kw):.1%}")
 print(f"  Semantic (vector): {statistics.mean(p_sem):.1%}")
 print(f"  Hybrid  (RRF=60) : {statistics.mean(p_hyb):.1%}   <- should win")
+if statistics.mean(p_hyb) > max(statistics.mean(p_kw), statistics.mean(p_sem)):
+    print("PASS — hybrid beats both keyword and semantic")
+else:
+    print("WARN — kiểm tra lại RRF hoặc embedding backend")
 
 # %% [markdown]
 # ## 5. Slice theo loại query

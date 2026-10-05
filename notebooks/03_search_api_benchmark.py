@@ -57,13 +57,15 @@ print(httpx.get(f"{URL}/healthz").json())
 r = httpx.get(f"{URL}/search", params={"q": "cloud computing tự động mở rộng", "mode": "hybrid"})
 r.raise_for_status()
 body = r.json()
+print("Response fields:", sorted(body))
+print({k: body[k] for k in ("query", "mode", "top_k", "latency_ms")})
 print(f"latency_ms: {body['latency_ms']:.1f}")
 print(f"top-3 hits:")
 for h in body["hits"][:3]:
     print(f"  {h['doc_id']:>14}  score={h['score']:.4f}  {h['title']}")
 
 # %% [markdown]
-# ## 3. TODO — Latency benchmark (100 queries × 3 modes)
+# ## 3. Latency benchmark (100 queries × 3 modes)
 #
 # Dùng 50 golden queries × 2 reps = 100 calls/mode. Ghi nhận latency từ
 # `body["latency_ms"]` (server-side, đã trừ network) HOẶC từ wall-clock httpx
@@ -76,6 +78,12 @@ import json
 
 DATA = ROOT / "data"
 golden = [json.loads(l) for l in (DATA / "golden_set.jsonl").open(encoding="utf-8")]
+
+# Warm-up model/index trước khi đo để loại ảnh hưởng của cold start.
+for q in golden[:10]:
+    warmup = httpx.get(f"{URL}/search", params={"q": q["query"], "mode": "hybrid"})
+    warmup.raise_for_status()
+print("Warm-up: 10 hybrid queries completed")
 
 
 def percentile(values: list[float], p: float) -> float:
@@ -92,6 +100,7 @@ def benchmark_mode(mode: str, reps: int = 2) -> dict[str, float]:
         for q in golden:
             t0 = time.perf_counter()
             r = httpx.get(f"{URL}/search", params={"q": q["query"], "mode": mode})
+            r.raise_for_status()
             wall_latencies.append((time.perf_counter() - t0) * 1000)
             server_latencies.append(r.json()["latency_ms"])
     return {
